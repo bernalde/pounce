@@ -6306,9 +6306,14 @@ mod tests {
         SparsityRequest, StartingPoint,
     };
 
-    struct Hs071Stub;
+    struct Hs071Stub {
+        info_available: bool,
+    }
     impl TNLP for Hs071Stub {
         fn get_nlp_info(&mut self) -> Option<NlpInfo> {
+            if !self.info_available {
+                return None;
+            }
             // HS071 dimensions: n=4, m=2, dense Jacobian (8 nz),
             // dense lower-triangular Hessian (10 nz).
             Some(NlpInfo {
@@ -6354,6 +6359,33 @@ mod tests {
             true
         }
         fn finalize_solution(&mut self, _sol: Solution<'_>, _d: &IpoptData, _q: &IpoptCq) {}
+    }
+
+    /// The ℓ₁ outer loop reuses one application for successive inner
+    /// attempts. If a later attempt exits before constructing its NLP, it
+    /// must not inherit `Some(false)` from an earlier unscaled attempt and
+    /// thereby authorize an original-units residual in the scaled family.
+    #[test]
+    fn an_early_exit_cannot_reuse_the_previous_row_scaling_state() {
+        let mut app = IpoptApplication::new();
+        app.initialize().unwrap();
+
+        // Model the record left by a successful previous inner attempt.
+        app.row_scaling_active.set(Some(false));
+
+        // Refusing the dimensions exits before the NLP exists and before a
+        // fresh row-scaling record can be made.
+        let tnlp: Rc<RefCell<dyn TNLP>> = Rc::new(RefCell::new(Hs071Stub {
+            info_available: false,
+        }));
+        let status = app.optimize_constrained(tnlp);
+
+        assert_eq!(status, ApplicationReturnStatus::InvalidProblemDefinition);
+        assert_eq!(
+            app.row_scaling_active.get(),
+            None,
+            "an early exit reused the previous attempt's row-scaling record",
+        );
     }
 
     #[test]
@@ -7151,7 +7183,9 @@ mod tests {
     #[test]
     fn application_reports_problem_dimensions() {
         let app = IpoptApplication::new();
-        let mut tnlp = Hs071Stub;
+        let mut tnlp = Hs071Stub {
+            info_available: true,
+        };
         let info = app.problem_dimensions(&mut tnlp).unwrap();
         assert_eq!(info.n, 4);
         assert_eq!(info.m, 2);
