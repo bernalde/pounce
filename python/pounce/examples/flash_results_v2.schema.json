@@ -183,13 +183,34 @@
   "point": {
    "type": "object",
    "additionalProperties": false,
-   "required": ["beta", "x", "y", "sum_x", "sum_y", "regime", "active_branches"],
+   "required": ["beta", "x", "y", "sum_x", "sum_y", "compressibility", "root_branches", "nontrivial_branch", "regime", "active_branches"],
    "properties": {
     "beta": {"type": "number", "minimum": 0, "maximum": 1},
     "x": {"type": "array", "items": {"type": "number", "minimum": 0, "maximum": 1}, "minItems": 2, "maxItems": 2},
     "y": {"type": "array", "items": {"type": "number", "minimum": 0, "maximum": 1}, "minItems": 2, "maxItems": 2},
     "sum_x": {"type": "number"},
     "sum_y": {"type": "number"},
+    "compressibility": {
+     "type": "object",
+     "additionalProperties": false,
+     "required": ["liquid", "vapor"],
+     "properties": {
+      "liquid": {"type": "number", "minimum": 0},
+      "vapor": {"type": "number", "minimum": 0}
+     }
+    },
+    "root_branches": {
+     "type": "object",
+     "additionalProperties": false,
+     "required": ["liquid", "vapor"],
+     "properties": {
+      "liquid": {"enum": ["one_real_root", "three_real_roots"]},
+      "vapor": {"enum": ["one_real_root", "three_real_roots"]}
+     }
+    },
+    "nontrivial_branch": {
+     "enum": ["component_0_above", "component_0_below", "component_1_above", "component_1_below"]
+    },
     "regime": {"enum": ["liquid", "bubble", "two_phase", "dew", "vapor", "undetermined"]},
     "active_branches": {
      "type": "object",
@@ -205,10 +226,13 @@
   "source": {
    "type": "object",
    "additionalProperties": false,
-   "required": ["balance", "isofugacity", "bound", "sign", "complementarity"],
+   "required": ["balance", "isofugacity", "eos", "root_selection", "nontriviality", "bound", "sign", "complementarity"],
    "properties": {
     "balance": {"$ref": "#/definitions/residual"},
     "isofugacity": {"$ref": "#/definitions/residual"},
+    "eos": {"$ref": "#/definitions/residual"},
+    "root_selection": {"$ref": "#/definitions/residual"},
+    "nontriviality": {"$ref": "#/definitions/residual"},
     "bound": {"$ref": "#/definitions/residual"},
     "sign": {"$ref": "#/definitions/residual"},
     "complementarity": {"$ref": "#/definitions/residual"}
@@ -288,8 +312,13 @@
       "regime_match": {"type": "boolean"},
       "biactive_branch_admissible": {"type": ["boolean", "null"]},
       "beta_error": {"type": "number", "minimum": 0},
+      "x_error": {"type": "number", "minimum": 0},
+      "y_error": {"type": "number", "minimum": 0},
       "sum_x_error": {"type": "number", "minimum": 0},
-      "sum_y_error": {"type": "number", "minimum": 0}
+      "sum_y_error": {"type": "number", "minimum": 0},
+      "z_liquid_error": {"type": "number", "minimum": 0},
+      "z_vapor_error": {"type": "number", "minimum": 0},
+      "root_branches_match": {"type": "boolean"}
      }
     },
     "error": {"type": ["string", "null"]}

@@ -30,6 +30,12 @@ def _point() -> dict:
         "y": [0.75, 0.25],
         "sum_x": 1.0,
         "sum_y": 1.0,
+        "compressibility": {"liquid": 0.04, "vapor": 0.87},
+        "root_branches": {
+            "liquid": "three_real_roots",
+            "vapor": "three_real_roots",
+        },
+        "nontrivial_branch": "component_0_above",
         "regime": "two_phase",
         "active_branches": {"vapor": ["slack_zero"], "liquid": ["slack_zero"]},
     }
@@ -39,6 +45,9 @@ def _source() -> dict:
     return {
         "balance": _residual(),
         "isofugacity": _residual(),
+        "eos": _residual(),
+        "root_selection": _residual(),
+        "nontriviality": _residual(),
         "bound": _residual(),
         "sign": _residual(),
         "complementarity": _residual(1e-8, admitted_scale=1e-4),
@@ -121,8 +130,13 @@ def _artifact() -> dict:
                         "regime_match": True,
                         "biactive_branch_admissible": None,
                         "beta_error": 0.0,
+                        "x_error": 0.0,
+                        "y_error": 0.0,
                         "sum_x_error": 0.0,
                         "sum_y_error": 0.0,
+                        "z_liquid_error": 0.0,
+                        "z_vapor_error": 0.0,
+                        "root_branches_match": True,
                     },
                     "error": None,
                 }
@@ -159,6 +173,20 @@ def test_every_source_residual_keeps_its_definition():
     artifact = _artifact()
     del artifact["comparison"]["records"][0]["source"]["complementarity"]["definition"]
     assert any("definition" in message for message in _errors(artifact))
+
+
+@pytest.mark.parametrize("name", ["eos", "root_selection", "nontriviality"])
+def test_algebraic_root_checks_cannot_be_omitted(name):
+    artifact = _artifact()
+    del artifact["comparison"]["records"][0]["source"][name]
+    assert any(name in message for message in _errors(artifact))
+
+
+@pytest.mark.parametrize("name", ["compressibility", "root_branches", "nontrivial_branch"])
+def test_root_point_data_cannot_be_omitted(name):
+    artifact = _artifact()
+    del artifact["comparison"]["records"][0]["point"][name]
+    assert any(name in message for message in _errors(artifact))
 
 
 def test_lowered_residuals_are_not_mixed_into_source_residuals():

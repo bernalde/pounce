@@ -100,8 +100,11 @@ DiscOpt comparison tracked by
 `pounce.examples/flash_results_v2.schema.json`. The version-2 comparison keeps
 source and lowered residuals separate, preserves every residual's definition, and
 distinguishes methods that were not run, failed, returned a local point, or returned a
-global certificate. A local record is structurally forbidden from carrying a certified
-gap or bound.
+global certificate. The DiscOpt point records the selected liquid/vapour compressibility
+roots and their one-root/three-root branches; its source block requires separate EOS,
+root-selection, and nontrivial-stationary-point residuals, so an artifact cannot validate
+while omitting the algebraic logic unique to the global encoding. A local record is
+structurally forbidden from carrying a certified gap or bound.
 
 ## Two findings
 
