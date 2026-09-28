@@ -55,7 +55,7 @@ def _source() -> dict:
 
 
 def _artifact() -> dict:
-    return {
+    artifact = {
         "schema": "pounce-flash-results/2",
         "issue": "jkitchin/discopt#1526; jkitchin/pounce#776 Gate 1",
         "stamp": {
@@ -144,6 +144,20 @@ def _artifact() -> dict:
             "reason": None,
         },
     }
+    local = artifact["comparison"]["records"][0]
+    for method in ("gdp", "sos1"):
+        certified = copy.deepcopy(local)
+        certified.update(
+            method=method,
+            state="certified",
+            status="optimal",
+            gap_certified=True,
+            bound=0.0,
+            gap=0.0,
+            node_count=1,
+        )
+        artifact["comparison"]["records"].append(certified)
+    return artifact
 
 
 def _errors(artifact: dict) -> list[str]:
@@ -157,6 +171,35 @@ def test_schema_is_valid_draft_7():
 
 def test_a_complete_cross_repository_artifact_validates():
     assert _errors(_artifact()) == []
+
+
+@pytest.mark.parametrize("method", ["gdp", "sos1", "scholtes"])
+def test_a_complete_comparison_requires_every_declared_method(method):
+    artifact = _artifact()
+    artifact["comparison"]["records"] = [
+        row for row in artifact["comparison"]["records"] if row["method"] != method
+    ]
+    assert _errors(artifact), f"complete comparison accepted without {method}"
+
+
+@pytest.mark.parametrize("oracle", [None, {}])
+def test_a_successful_record_requires_complete_oracle_evidence(oracle):
+    artifact = _artifact()
+    artifact["comparison"]["records"][0]["oracle"] = oracle
+    assert _errors(artifact)
+
+
+def test_local_and_certified_states_are_tied_to_their_method_classes():
+    artifact = _artifact()
+    artifact["comparison"]["records"][0]["method"] = "gdp"
+    assert _errors(artifact), "an exact GDP arm cannot be labeled local"
+
+    artifact = _artifact()
+    certified = next(
+        row for row in artifact["comparison"]["records"] if row["state"] == "certified"
+    )
+    certified["method"] = "scholtes"
+    assert _errors(artifact), "the Scholtes arm cannot claim a global certificate"
 
 
 def test_a_local_result_cannot_carry_a_certified_bound():
@@ -213,9 +256,9 @@ def test_version_2_still_checks_version_1_leg_records():
 
 def test_a_certificate_requires_the_reported_bound_and_gap():
     artifact = _artifact()
-    record = artifact["comparison"]["records"][0]
-    record["state"] = "certified"
-    record["gap_certified"] = True
+    record = next(row for row in artifact["comparison"]["records"] if row["method"] == "gdp")
+    record["bound"] = None
+    record["gap"] = None
     assert any("number" in message for message in _errors(artifact))
 
 

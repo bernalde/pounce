@@ -156,13 +156,31 @@
       {"contains": {"const": "scholtes"}}
      ]
     },
-    "records": {"type": "array", "items": {"$ref": "#/definitions/comparisonRecord"}},
+    "records": {
+     "type": "array",
+     "items": {"$ref": "#/definitions/comparisonRecord"},
+     "description": "Flat temperature/method cells. This schema requires every method to occur; producers must additionally enforce exactly one cell for every (temperatures_k, methods) pair because Draft 7 cannot express that cross-array join."
+    },
     "reason": {"type": ["string", "null"]}
    },
    "allOf": [
     {
      "if": {"properties": {"state": {"const": "complete"}}},
-     "then": {"properties": {"temperatures_k": {"minItems": 1}, "methods": {"minItems": 1}, "records": {"minItems": 1}, "reason": {"type": "null"}}},
+     "then": {
+      "properties": {
+       "temperatures_k": {"minItems": 1},
+       "methods": {"minItems": 1},
+       "records": {
+        "minItems": 3,
+        "allOf": [
+         {"contains": {"type": "object", "required": ["method"], "properties": {"method": {"const": "gdp"}}}},
+         {"contains": {"type": "object", "required": ["method"], "properties": {"method": {"const": "sos1"}}}},
+         {"contains": {"type": "object", "required": ["method"], "properties": {"method": {"const": "scholtes"}}}}
+        ]
+       },
+       "reason": {"type": "null"}
+      }
+     },
      "else": {"properties": {"records": {"maxItems": 0}, "reason": {"type": "string", "minLength": 1}}}
     }
    ]
@@ -246,6 +264,23 @@
     "row": {"$ref": "#/definitions/residual"}
    }
   },
+  "oracleComparison": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": ["regime_match", "biactive_branch_admissible", "beta_error", "x_error", "y_error", "sum_x_error", "sum_y_error", "z_liquid_error", "z_vapor_error", "root_branches_match"],
+   "properties": {
+    "regime_match": {"type": "boolean"},
+    "biactive_branch_admissible": {"type": ["boolean", "null"]},
+    "beta_error": {"type": "number", "minimum": 0},
+    "x_error": {"type": "number", "minimum": 0},
+    "y_error": {"type": "number", "minimum": 0},
+    "sum_x_error": {"type": "number", "minimum": 0},
+    "sum_y_error": {"type": "number", "minimum": 0},
+    "z_liquid_error": {"type": "number", "minimum": 0},
+    "z_vapor_error": {"type": "number", "minimum": 0},
+    "root_branches_match": {"type": "boolean"}
+   }
+  },
   "legRecord": {
    "type": "object",
    "required": ["case", "temperature_k", "route", "ok", "status", "source", "validation", "nlp"],
@@ -306,35 +341,21 @@
     "point": {"oneOf": [{"type": "null"}, {"$ref": "#/definitions/point"}]},
     "source": {"oneOf": [{"type": "null"}, {"$ref": "#/definitions/source"}]},
     "lowered": {"oneOf": [{"type": "null"}, {"$ref": "#/definitions/lowered"}]},
-    "oracle": {
-     "type": ["object", "null"],
-     "properties": {
-      "regime_match": {"type": "boolean"},
-      "biactive_branch_admissible": {"type": ["boolean", "null"]},
-      "beta_error": {"type": "number", "minimum": 0},
-      "x_error": {"type": "number", "minimum": 0},
-      "y_error": {"type": "number", "minimum": 0},
-      "sum_x_error": {"type": "number", "minimum": 0},
-      "sum_y_error": {"type": "number", "minimum": 0},
-      "z_liquid_error": {"type": "number", "minimum": 0},
-      "z_vapor_error": {"type": "number", "minimum": 0},
-      "root_branches_match": {"type": "boolean"}
-     }
-    },
+    "oracle": {"oneOf": [{"type": "null"}, {"$ref": "#/definitions/oracleComparison"}]},
     "error": {"type": ["string", "null"]}
    },
    "allOf": [
     {
      "if": {"properties": {"state": {"const": "local"}}},
-     "then": {"properties": {"gap_certified": {"const": false}, "objective": {"type": "number"}, "bound": {"type": "null"}, "gap": {"type": "null"}, "point": {"$ref": "#/definitions/point"}, "source": {"$ref": "#/definitions/source"}, "lowered": {"$ref": "#/definitions/lowered"}}}
+     "then": {"properties": {"method": {"const": "scholtes"}, "gap_certified": {"const": false}, "objective": {"type": "number"}, "bound": {"type": "null"}, "gap": {"type": "null"}, "point": {"$ref": "#/definitions/point"}, "source": {"$ref": "#/definitions/source"}, "lowered": {"$ref": "#/definitions/lowered"}, "oracle": {"$ref": "#/definitions/oracleComparison"}, "error": {"type": "null"}}}
     },
     {
      "if": {"properties": {"state": {"const": "certified"}}},
-     "then": {"properties": {"gap_certified": {"const": true}, "objective": {"type": "number"}, "bound": {"type": "number"}, "gap": {"type": "number", "minimum": 0}, "point": {"$ref": "#/definitions/point"}, "source": {"$ref": "#/definitions/source"}, "lowered": {"$ref": "#/definitions/lowered"}}}
+     "then": {"properties": {"method": {"enum": ["gdp", "sos1"]}, "gap_certified": {"const": true}, "objective": {"type": "number"}, "bound": {"type": "number"}, "gap": {"type": "number", "minimum": 0}, "point": {"$ref": "#/definitions/point"}, "source": {"$ref": "#/definitions/source"}, "lowered": {"$ref": "#/definitions/lowered"}, "oracle": {"$ref": "#/definitions/oracleComparison"}, "error": {"type": "null"}}}
     },
     {
      "if": {"properties": {"state": {"enum": ["not_run", "failed"]}}},
-     "then": {"properties": {"gap_certified": {"const": false}, "bound": {"type": "null"}, "point": {"type": "null"}, "source": {"type": "null"}, "lowered": {"type": "null"}}}
+     "then": {"properties": {"gap_certified": {"const": false}, "bound": {"type": "null"}, "point": {"type": "null"}, "source": {"type": "null"}, "lowered": {"type": "null"}, "oracle": {"type": "null"}}}
     }
    ]
   }
