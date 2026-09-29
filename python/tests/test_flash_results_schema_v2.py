@@ -275,9 +275,22 @@ def test_an_unrun_or_failed_record_cannot_smuggle_a_point(state):
     assert any("None" in message for message in _errors(artifact))
 
 
-def test_not_run_is_distinct_from_an_absent_version_1_comparison():
+@pytest.mark.parametrize(
+    "discopt_provenance",
+    [
+        {"present": True, "commit": "0123456789abcdef"},
+        {"present": False},
+        {"present": False, "commit": None},
+    ],
+    ids=["installed", "absent-without-commit", "absent-with-null-commit"],
+)
+def test_not_run_is_distinct_from_an_absent_version_1_comparison(discopt_provenance):
     artifact = _artifact()
-    artifact["stamp"]["repositories"]["discopt"]["comparison_run"] = False
+    artifact["stamp"]["repositories"]["discopt"] = {
+        **discopt_provenance,
+        "comparison_run": False,
+        "reason": "comparison environment unavailable",
+    }
     artifact["comparison"] = {
         "state": "not_run",
         "discopt_issue": "jkitchin/discopt#1526",
@@ -291,3 +304,23 @@ def test_not_run_is_distinct_from_an_absent_version_1_comparison():
     absent = copy.deepcopy(artifact)
     del absent["comparison"]
     assert any("comparison" in message for message in _errors(absent))
+
+
+@pytest.mark.parametrize(
+    "discopt_provenance",
+    [
+        {"present": False, "commit": "0123456789abcdef"},
+        {"present": True},
+        {"present": True, "commit": None},
+        {"present": True, "commit": "abc"},
+    ],
+    ids=["absent", "missing-commit", "null-commit", "short-commit"],
+)
+def test_complete_comparison_requires_discopt_provenance(discopt_provenance):
+    artifact = _artifact()
+    artifact["stamp"]["repositories"]["discopt"] = {
+        **discopt_provenance,
+        "comparison_run": True,
+        "reason": "comparison completed",
+    }
+    assert _errors(artifact)

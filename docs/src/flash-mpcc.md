@@ -105,10 +105,17 @@ roots and their one-root/three-root branches; its source block requires separate
 root-selection, and nontrivial-stationary-point residuals, so an artifact cannot validate
 while omitting the algebraic logic unique to the global encoding. A local record is
 structurally forbidden from carrying a certified gap or bound.
-The schema also requires at least one GDP, SOS1, and Scholtes record. Exact
-one-per-cell coverage of the declared temperature-by-method matrix is a producer
-invariant (Draft 7 cannot express that cross-array join); the DiscOpt artifact
-builder checks it before validation.
+A completed comparison requires at least one GDP, SOS1, and Scholtes record,
+plus DiscOpt provenance with `present: true` and a commit of at least seven
+characters. Exact one-per-cell coverage of the declared temperature-by-method
+matrix is a producer invariant (Draft 7 cannot express that cross-array join);
+the DiscOpt artifact builder checks it before validation.
+
+When DiscOpt is unavailable, version 2 can instead report
+`comparison.state: "not_run"`, empty records, and a reason. Its DiscOpt stamp
+uses `present: false` and `comparison_run: false`; the commit may be omitted or
+null. An installed DiscOpt environment may also report `not_run`, retaining its
+known provenance.
 
 ## Two findings
 

@@ -54,8 +54,11 @@ the "fast regression" gh#776 asks Gate 1 to become.
 `pounce-flash-results/2` schema at
 `pounce.examples/flash_results_v2.schema.json`. Version 1 means that the comparison
 is absent; version 2 has an explicit comparison state and distinguishes records that
-were not run, failed, returned a local point, or returned a global certificate. Load
-the schema without depending on a source checkout:
+were not run, failed, returned a local point, or returned a global certificate.
+A `not_run` comparison can record DiscOpt as absent with an omitted or null
+commit; a completed comparison requires DiscOpt to be present with a commit
+of at least seven characters. Load the schema without depending on a source
+checkout:
 
 ```python
 from importlib.resources import files

@@ -29,11 +29,11 @@
       },
       "discopt": {
        "type": "object",
-       "required": ["present", "commit", "comparison_run", "reason"],
+       "required": ["present", "comparison_run", "reason"],
        "properties": {
-        "present": {"const": true},
+        "present": {"type": "boolean"},
         "version": {"type": "string"},
-        "commit": {"type": "string", "minLength": 7},
+        "commit": {"type": ["string", "null"], "minLength": 7},
         "comparison_run": {"type": "boolean"},
         "reason": {"type": "string"}
        }
@@ -363,7 +363,26 @@
  "allOf": [
   {
    "if": {"properties": {"comparison": {"properties": {"state": {"const": "complete"}}}}},
-   "then": {"properties": {"stamp": {"properties": {"repositories": {"properties": {"discopt": {"properties": {"comparison_run": {"const": true}}}}}}}}},
+   "then": {
+    "properties": {
+     "stamp": {
+      "properties": {
+       "repositories": {
+        "properties": {
+         "discopt": {
+          "required": ["commit"],
+          "properties": {
+           "present": {"const": true},
+           "commit": {"type": "string", "minLength": 7},
+           "comparison_run": {"const": true}
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
    "else": {"properties": {"stamp": {"properties": {"repositories": {"properties": {"discopt": {"properties": {"comparison_run": {"const": false}}}}}}}}}
   }
  ]
